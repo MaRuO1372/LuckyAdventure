@@ -1,6 +1,6 @@
 android {
     buildToolsVersion "29.0.3"
-    compileSdkVersion 29
+    compileSdkVersion 30
     sourceSets {
         main {
             manifest.srcFile 'AndroidManifest.xml'
@@ -17,9 +17,9 @@ android {
         exclude 'META-INF/robovm/ios/robovm.xml'
     }
     defaultConfig {
-        applicationId "com.nikorych.nikkybird"
-        minSdkVersion 14
-        targetSdkVersion 29
+        applicationId "com.godimago.dima"
+        minSdkVersion 16
+        targetSdkVersion 30
         versionCode 1
         versionName "1.0"
     }
