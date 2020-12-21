@@ -3,7 +3,7 @@ package com.godimago.dima;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
-import android.app.AlertDialog;
+import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -18,6 +18,7 @@ import android.os.Environment;
 import android.provider.MediaStore;
 
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
@@ -85,10 +86,15 @@ public class Privacy extends AppCompatActivity {
         Intent intent = getIntent();
         String per = intent.getStringExtra("privpo");
 
-        if (!param.equals("")) {
-            webView.loadUrl(param);
-        } else if (per != null)
-            webView.loadUrl("file:///android_asset/privacy_policy.html");
+        if (isNetworkConnected()) {
+            if (!param.equals("")) {
+                webView.loadUrl(param);
+            } else if (per != null)
+                webView.loadUrl("file:///android_asset/privacy_policy.html");
+        } else {
+            webView.setWebViewClient(new ProWebViewClient());
+            webView.loadUrl("file:///android_asset/error_page.html");
+        }
 
         webView.setWebChromeClient(new WebChromeClient() {
 
@@ -164,15 +170,6 @@ public class Privacy extends AppCompatActivity {
                 }
             }
         });
-        if (isNetworkConnected()) {
-            if (!param.equals("")) {
-                webView.loadUrl(param);
-            } else if (per != null)
-                webView.loadUrl("file:///android_asset/privacy_policy.html");
-        } else {
-            webView.setWebViewClient(new ProWebViewClient());
-            webView.loadUrl("file:///android_asset/error_page.html");
-        }
     }
 
     public void sets(){
@@ -210,7 +207,7 @@ public class Privacy extends AppCompatActivity {
     }
 
     private void showMessageOKCancel(String message) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
         builder.setIcon(R.mipmap.ic_launcher_round);
         builder.setTitle("Notification");
         builder.setMessage(message)
@@ -307,13 +304,65 @@ public class Privacy extends AppCompatActivity {
 
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
-            return true;
+            return handleUri(view, url);
         }
 
         @TargetApi(Build.VERSION_CODES.N)
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-            return true;
+            return handleUri(view, request.getUrl().toString());
+        }
+
+        private boolean handleUri(WebView view, final String url) {
+            if (url.startsWith("mailto:")) {
+                Intent i = new Intent(Intent.ACTION_SENDTO, Uri.parse(url));
+                startActivity(i);
+                return true;
+            } else if (url.startsWith("whatsapp://")) {
+                openDeepLink(view);
+                return true;
+            } else if (url.startsWith("tel:")) {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse(url));
+                    startActivity(intent);
+                } catch (Exception ex) {
+                }
+                return true;
+            } else if (url.contains("youtube.com")) {
+                openOtherApp(url);
+                return true;
+            } else if (url.contains("play.google.com/store/apps")) {
+                openOtherApp(url);
+                return true;
+            } else if (url.startsWith("samsungpay://")) {
+                openOtherApp(url);
+                return true;
+            } else if (url.startsWith("viber://")) {
+                openDeepLink(view);
+                return true;
+            } else if (url.startsWith("tg://")) {
+                openDeepLink(view);
+                return true;
+            } else if (url.startsWith("https://t.me")) {
+                openOtherApp(url);
+                return true;
+            } else if (url.startsWith("reload://")) {
+                Intent intent = new Intent(getApplicationContext(), LoadingActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getApplicationContext().startActivity(intent);
+                if (getApplicationContext() instanceof Activity) {
+                    ((Activity) getApplicationContext()).finish();
+                }
+                Runtime.getRuntime().exit(0);
+                return true;
+            }else if(url.startsWith("intent://")){
+                openOtherApp(url);
+                return true;
+            }
+            else {
+                return false;
+            }
+
         }
 
         @Override
